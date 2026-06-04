@@ -5,7 +5,6 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { encryptSecret } from "@/lib/security";
-import { appUrl } from "@streamfusion/shared";
 
 const config = {
   twitch: {
@@ -27,17 +26,19 @@ const config = {
 };
 
 export async function GET(request: Request, { params }: { params: Promise<{ provider: string }> }) {
+  const origin = new URL(request.url).origin;
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return NextResponse.redirect(new URL("/login", appUrl()));
+  if (!session?.user?.id) return NextResponse.redirect(new URL("/login", origin));
   const { provider } = await params;
-  if (provider !== "twitch" && provider !== "kick") return NextResponse.redirect(new URL("/dashboard?oauth=unsupported", appUrl()));
+  if (provider !== "twitch" && provider !== "kick") return NextResponse.redirect(new URL("/dashboard?oauth=unsupported", origin));
   const item = config[provider];
   const url = new URL(request.url);
   const state = url.searchParams.get("state");
   const code = url.searchParams.get("code");
   const jar = await cookies();
   const savedState = jar.get(`oauth_state_${provider}`)?.value;
-  if (!item || !state || state !== savedState || !code) return NextResponse.redirect(new URL("/dashboard?oauth=invalid", appUrl()));
+  if (!item || !state || state !== savedState || !code) return NextResponse.redirect(new URL("/dashboard?oauth=invalid", origin));
+  const redirectUri = item.redirectUri || `${origin}/api/oauth/${provider}/callback`;
   const tokenRes = await fetch(item.tokenUrl, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -46,10 +47,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
       client_secret: item.clientSecret || "",
       code,
       grant_type: "authorization_code",
-      redirect_uri: item.redirectUri || ""
+      redirect_uri: redirectUri
     })
   });
-  if (!tokenRes.ok) return NextResponse.redirect(new URL(`/dashboard?oauth=${provider}-token-failed`, appUrl()));
+  if (!tokenRes.ok) return NextResponse.redirect(new URL(`/dashboard?oauth=${provider}-token-failed`, origin));
   const token = await tokenRes.json() as { access_token: string; refresh_token?: string; expires_in?: number; scope?: string[] };
   const userRes = await fetch(item.userUrl, {
     headers: { Authorization: `Bearer ${token.access_token}`, ...(provider === "twitch" ? { "Client-Id": item.clientId || "" } : {}) }
@@ -80,7 +81,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
     }
   });
   await audit(session.user.id, "provider.connected", { provider });
-  return NextResponse.redirect(new URL("/dashboard?oauth=connected", appUrl()));
+  return NextResponse.redirect(new URL("/dashboard?oauth=connected", origin));
 }
 
 function normalizeProfile(provider: "twitch" | "kick", profile: any) {
