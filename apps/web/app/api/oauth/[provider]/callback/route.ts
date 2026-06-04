@@ -40,6 +40,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
   const savedState = jar.get(`oauth_state_${provider}`)?.value;
   if (!item || !state || state !== savedState || !code) return NextResponse.redirect(new URL("/dashboard?oauth=invalid", origin));
   const redirectUri = item.redirectUri || `${origin}/api/oauth/${provider}/callback`;
+  const kickCodeVerifier = jar.get("oauth_pkce_kick")?.value;
+  if (provider === "kick" && !kickCodeVerifier) return NextResponse.redirect(new URL("/dashboard?oauth=invalid", origin));
   const tokenRes = await fetch(item.tokenUrl, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -48,7 +50,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
       client_secret: item.clientSecret || "",
       code,
       grant_type: "authorization_code",
-      redirect_uri: redirectUri
+      redirect_uri: redirectUri,
+      ...(provider === "kick" ? { code_verifier: kickCodeVerifier || "" } : {})
     })
   });
   if (!tokenRes.ok) return NextResponse.redirect(new URL(`/dashboard?oauth=${provider}-token-failed`, origin));

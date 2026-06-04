@@ -1,4 +1,4 @@
-import { randomBytes } from "crypto";
+import { createHash, randomBytes } from "crypto";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
@@ -38,5 +38,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
   url.searchParams.set("response_type", "code");
   url.searchParams.set("scope", item.scope);
   url.searchParams.set("state", state);
+  if (provider === "kick") {
+    const verifier = randomBytes(64).toString("base64url");
+    const challenge = createHash("sha256").update(verifier).digest("base64url");
+    jar.set("oauth_pkce_kick", verifier, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", maxAge: 600 });
+    url.searchParams.set("code_challenge", challenge);
+    url.searchParams.set("code_challenge_method", "S256");
+  }
   return NextResponse.redirect(url);
 }
