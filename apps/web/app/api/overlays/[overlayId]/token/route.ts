@@ -5,8 +5,10 @@ import { prisma } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { createPrivateToken, hashToken } from "@/lib/security";
 import { overlayUrl } from "@/lib/overlay-url";
+import { publicOrigin } from "@/lib/public-origin";
 
-export async function POST(_: Request, { params }: { params: Promise<{ overlayId: string }> }) {
+export async function POST(request: Request, { params }: { params: Promise<{ overlayId: string }> }) {
+  const origin = publicOrigin(request);
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { overlayId } = await params;
@@ -19,5 +21,5 @@ export async function POST(_: Request, { params }: { params: Promise<{ overlayId
     create: { overlayId, tokenHash: hashToken(privateToken) }
   });
   await audit(session.user.id, "overlay_token.regenerated", { overlayId });
-  return NextResponse.json({ privateToken, url: overlayUrl(overlayId, privateToken) });
+  return NextResponse.json({ privateToken, url: overlayUrl(overlayId, privateToken, origin) });
 }
