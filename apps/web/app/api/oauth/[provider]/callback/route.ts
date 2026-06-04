@@ -68,6 +68,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
     if (!userRes.ok) console.error(`${provider} profile lookup failed`, userRes.status, await userRes.text().catch(() => ""));
     const account = normalizeProfile(provider, profile);
     const scopes = Array.isArray(token.scope) ? token.scope : String(token.scope || "").split(" ").filter(Boolean);
+    if (provider === "kick") await subscribeKickChatEvents(token.access_token, account.id);
     await prisma.connectedAccount.upsert({
       where: { provider_providerAccountId: { provider: item.platform, providerAccountId: account.id } },
       create: {
@@ -97,6 +98,22 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
     console.error("OAuth callback failed", error);
     return NextResponse.redirect(new URL("/dashboard?oauth=callback-error", origin));
   }
+}
+
+async function subscribeKickChatEvents(accessToken: string, broadcasterUserId: string) {
+  const response = await fetchWithTimeout("https://api.kick.com/public/v1/events/subscriptions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      broadcaster_user_id: Number(broadcasterUserId),
+      events: [{ name: "chat.message.sent", version: 1 }],
+      method: "webhook"
+    })
+  });
+  if (!response.ok) console.error("kick event subscription failed", response.status, await response.text().catch(() => ""));
 }
 
 function normalizeProfile(provider: "twitch" | "kick", profile: any) {

@@ -16,7 +16,7 @@ const config = {
     authUrl: "https://id.kick.com/oauth/authorize",
     clientId: process.env.KICK_CLIENT_ID,
     redirectUri: process.env.KICK_REDIRECT_URI,
-    scope: "user:read channel:read"
+    scope: "user:read channel:read events:subscribe"
   }
 };
 

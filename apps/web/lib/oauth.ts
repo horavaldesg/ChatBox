@@ -33,11 +33,12 @@ export async function refreshProviderToken(provider: "twitch" | "kick", encrypte
     })
   });
   if (!response.ok) throw new Error(`Unable to refresh ${provider} token.`);
-  const token = await response.json() as { access_token: string; refresh_token?: string; expires_in?: number; scope?: string[] };
+  const token = await response.json() as { access_token: string; refresh_token?: string; expires_in?: number; scope?: string[] | string };
+  const scopes = Array.isArray(token.scope) ? token.scope : String(token.scope || "").split(" ").filter(Boolean);
   return {
     encryptedAccessToken: encryptSecret(token.access_token),
     encryptedRefreshToken: token.refresh_token ? encryptSecret(token.refresh_token) : encryptedRefreshToken,
     expiresAt: token.expires_in ? new Date(Date.now() + token.expires_in * 1000) : null,
-    scopes: token.scope || []
+    scopes
   };
 }
