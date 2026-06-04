@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { encryptSecret } from "@/lib/security";
+import { publicOrigin } from "@/lib/public-origin";
 
 const config = {
   twitch: {
@@ -26,7 +27,7 @@ const config = {
 };
 
 export async function GET(request: Request, { params }: { params: Promise<{ provider: string }> }) {
-  const origin = new URL(request.url).origin;
+  const origin = publicOrigin(request);
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return NextResponse.redirect(new URL("/login", origin));
   const { provider } = await params;
