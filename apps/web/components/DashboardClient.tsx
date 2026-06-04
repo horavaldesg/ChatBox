@@ -215,6 +215,7 @@ function Metric({ label, value }: { label: string; value: number }) {
 
 function oauthMessage(status: string): string {
   if (status === "connected") return "Provider account connected.";
+  if (status === "callback-error") return "Provider callback failed before it could finish. Check the Railway logs for the provider error details.";
   if (status === "invalid") return "OAuth response was invalid. Try connecting again.";
   if (status === "unsupported") return "That provider is not supported yet.";
   if (status.endsWith("-not-configured")) return `${status.split("-")[0]} OAuth is not configured. Add the client ID, client secret, and redirect URI in your environment, then restart the app.`;
