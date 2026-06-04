@@ -1,0 +1,38 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: streamfusion
+      POSTGRES_USER: streamfusion
+      POSTGRES_PASSWORD: streamfusion
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U streamfusion -d streamfusion"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://streamfusion:streamfusion@postgres:5432/streamfusion?schema=public
+      NEXTAUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      AUTH_SECRET: local-development-secret-change-me-32
+      TOKEN_ENCRYPTION_KEY: bG9jYWwtZGV2LXN0cmVhbWZ1c2lvbi1rZXkh
+      MOCK_PROVIDER_ENABLED: "true"
+      ADMIN_EMAILS: admin@example.com
+    ports:
+      - "3000:3000"
+    command: sh -c "npx prisma migrate deploy --schema apps/web/prisma/schema.prisma && npm start"
+
+volumes:
+  postgres_data:

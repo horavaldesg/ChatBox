@@ -1,0 +1,13 @@
+node_modules
+apps/*/node_modules
+packages/*/node_modules
+.next
+apps/web/.next
+dist
+packages/*/dist
+.git
+.env
+.env.local
+coverage
+*.tsbuildinfo
+npm-debug.log

@@ -1,0 +1,32 @@
+{
+  "name": "streamfusion",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @streamfusion/web",
+    "build": "npm run build -w @streamfusion/shared && npm run build -w @streamfusion/chat-core && npm run build -w @streamfusion/web",
+    "start": "npm run start -w @streamfusion/web",
+    "typecheck": "npm run build -w @streamfusion/shared && npm run build -w @streamfusion/chat-core && npm run typecheck -w @streamfusion/web",
+    "prisma:generate": "npm run prisma:generate -w @streamfusion/web",
+    "prisma:migrate": "npm run prisma:migrate -w @streamfusion/web",
+    "seed": "npm run seed -w @streamfusion/web"
+  },
+  "overrides": {
+    "cookie": "^0.7.2",
+    "postcss": "^8.5.10",
+    "uuid": "^11.1.1",
+    "next": {
+      "postcss": "^8.5.10"
+    },
+    "next-auth": {
+      "cookie": "^0.7.2",
+      "uuid": "^11.1.1"
+    }
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}
